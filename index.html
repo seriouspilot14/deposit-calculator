@@ -33,3 +33,238 @@
   body {
     font-family: Tahoma, Vazirmatn, sans-serif;
     background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 20px 16px 40px;
+    display: flex;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+  }
+  .app-container {
+    width: 100%;
+    max-width: 480px;
+  }
+  @media (min-width: 700px) {
+    body { padding-top: 48px; }
+    .app-container {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 28px 24px 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+  }
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+    flex: 1;
+  }
+  #theme-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--toggle-bg);
+    color: var(--toggle-fg);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 4px;
+  }
+  input, select {
+    width: 100%;
+    height: 40px;
+    font-size: 15px;
+    text-align: right;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .err {
+    font-size: 13px;
+    color: var(--danger);
+    display: none;
+    margin-bottom: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid var(--card-border);
+  }
+  .card p.label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0 0 4px;
+  }
+  .card p.value {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+<div class="app-container">
+
+<div class="top-row">
+  <button id="theme-toggle" aria-label="تغییر حالت روشن/تاریک">🌙</button>
+  <h1>محاسبه‌گر سود سپرده بانکی</h1>
+  <span style="width:36px;"></span>
+</div>
+
+<label for="principal">مبلغ سپرده (تومان)</label>
+<input type="text" inputmode="numeric" id="principal" value="100,000,000" />
+
+<label for="rate">نرخ سود سالانه (٪)</label>
+<input type="text" inputmode="numeric" id="rate" value="18" />
+
+<label for="days">مدت سپرده (روز)</label>
+<input type="text" inputmode="numeric" id="days" value="90" />
+
+<label for="mode">نوع محاسبه سود</label>
+<select id="mode">
+  <option value="simple">ساده - روزشمار (بدون تجمیع)</option>
+  <option value="compound">مرکب - تجمیع ماهانه</option>
+</select>
+
+<div class="err" id="err"></div>
+
+<div class="grid">
+  <div class="card">
+    <p class="label">سود کل</p>
+    <p class="value" id="out-interest">-</p>
+  </div>
+  <div class="card">
+    <p class="label">مبلغ نهایی</p>
+    <p class="value" id="out-total">-</p>
+  </div>
+  <div class="card">
+    <p class="label">سود روزانه (میانگین)</p>
+    <p class="value" id="out-daily">-</p>
+  </div>
+  <div class="card">
+    <p class="label">سود ماهانه (میانگین)</p>
+    <p class="value" id="out-monthly">-</p>
+  </div>
+</div>
+
+<script>
+function toNumber(str){
+  if(typeof str !== 'string') return NaN;
+  var cleaned = str.replace(/,/g, '').trim();
+  if(cleaned === '') return NaN;
+  return parseFloat(cleaned);
+}
+function addCommas(numStr){
+  var parts = numStr.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.join('.');
+}
+function formatMoney(n){
+  n = Math.round(n);
+  return n.toLocaleString('en-US') + ' تومان';
+}
+function attachThousandsFormatting(id){
+  var el = document.getElementById(id);
+  el.addEventListener('input', function(){
+    var cursorFromEnd = el.value.length - el.selectionStart;
+    var raw = el.value.replace(/[^0-9.]/g, '');
+    var formatted = raw === '' ? '' : addCommas(raw);
+    el.value = formatted;
+    var pos = Math.max(0, el.value.length - cursorFromEnd);
+    el.setSelectionRange(pos, pos);
+    calc();
+  });
+}
+function calc(){
+  var p = toNumber(document.getElementById('principal').value);
+  var r = toNumber(document.getElementById('rate').value);
+  var d = toNumber(document.getElementById('days').value);
+  var mode = document.getElementById('mode').value;
+  var errEl = document.getElementById('err');
+
+  if(isNaN(p) || p <= 0 || isNaN(r) || r < 0 || isNaN(d) || d <= 0){
+    errEl.style.display = 'block';
+    errEl.textContent = 'مبلغ، نرخ و مدت را به‌درستی وارد کنید.';
+    document.getElementById('out-interest').textContent = '-';
+    document.getElementById('out-total').textContent = '-';
+    document.getElementById('out-daily').textContent = '-';
+    document.getElementById('out-monthly').textContent = '-';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  var interest, total;
+  if(mode === 'simple'){
+    interest = p * (r/100) * (d/365);
+    total = p + interest;
+  } else {
+    var months = d / 30;
+    var monthlyRate = r / 1200;
+    total = p * Math.pow(1 + monthlyRate, months);
+    interest = total - p;
+  }
+  var dailyAvg = interest / d;
+  var monthlyAvg = interest / (d/30);
+
+  document.getElementById('out-interest').textContent = formatMoney(interest);
+  document.getElementById('out-total').textContent = formatMoney(total);
+  document.getElementById('out-daily').textContent = formatMoney(dailyAvg);
+  document.getElementById('out-monthly').textContent = formatMoney(monthlyAvg);
+}
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+var savedTheme = null;
+try { savedTheme = localStorage.getItem('theme'); } catch(e) {}
+var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var current = document.documentElement.getAttribute('data-theme');
+  var next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  try { localStorage.setItem('theme', next); } catch(e) {}
+});
+
+attachThousandsFormatting('principal');
+attachThousandsFormatting('rate');
+attachThousandsFormatting('days');
+document.getElementById('mode').addEventListener('change', calc);
+calc();
+</script>
+
+</div>
+</body>
+</html>
