@@ -12,6 +12,21 @@
     color: #1a1a18;
     margin: 0;
     padding: 20px 16px 40px;
+    display: flex;
+    justify-content: center;
+  }
+  .app-container {
+    width: 100%;
+    max-width: 480px;
+  }
+  @media (min-width: 700px) {
+    body { padding-top: 48px; }
+    .app-container {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 24px 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
   }
   h1 {
     font-size: 18px;
@@ -72,6 +87,7 @@
 </style>
 </head>
 <body>
+<div class="app-container">
 
 <h1>محاسبه‌گر سود سپرده بانکی</h1>
 
@@ -182,5 +198,6 @@ document.getElementById('mode').addEventListener('change', calc);
 calc();
 </script>
 
+</div>
 </body>
 </html>
