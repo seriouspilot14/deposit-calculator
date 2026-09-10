@@ -6,14 +6,39 @@
 <title>محاسبه‌گر سود سپرده بانکی</title>
 <style>
   * { box-sizing: border-box; }
+  :root {
+    --bg: #f5f5f4;
+    --card-bg: #fff;
+    --text: #1a1a18;
+    --text-secondary: #666;
+    --border: #d5d3cc;
+    --card-border: #e5e3dc;
+    --accent: #185fa5;
+    --danger: #a32d2d;
+    --toggle-bg: #e5e3dc;
+    --toggle-fg: #1a1a18;
+  }
+  [data-theme="dark"] {
+    --bg: #17171a;
+    --card-bg: #232327;
+    --text: #f2f2f0;
+    --text-secondary: #a3a39c;
+    --border: #3a3a3f;
+    --card-border: #33333a;
+    --accent: #6cb2ff;
+    --danger: #ff8a8a;
+    --toggle-bg: #33333a;
+    --toggle-fg: #f2f2f0;
+  }
   body {
     font-family: Tahoma, Vazirmatn, sans-serif;
-    background: #f5f5f4;
-    color: #1a1a18;
+    background: var(--bg);
+    color: var(--text);
     margin: 0;
     padding: 20px 16px 40px;
     display: flex;
     justify-content: center;
+    transition: background 0.2s, color 0.2s;
   }
   .app-container {
     width: 100%;
@@ -22,21 +47,42 @@
   @media (min-width: 700px) {
     body { padding-top: 48px; }
     .app-container {
-      background: #fff;
+      background: var(--card-bg);
       border-radius: 16px;
       padding: 28px 24px 32px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
   }
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
   h1 {
     font-size: 18px;
     font-weight: 600;
     text-align: center;
-    margin: 0 0 20px;
+    margin: 0;
+    flex: 1;
+  }
+  #theme-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--toggle-bg);
+    color: var(--toggle-fg);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
   }
   label {
     font-size: 13px;
-    color: #666;
+    color: var(--text-secondary);
     display: block;
     margin-bottom: 4px;
   }
@@ -46,19 +92,19 @@
     font-size: 15px;
     text-align: right;
     padding: 0 10px;
-    border: 1px solid #d5d3cc;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background: #fff;
-    color: #1a1a18;
+    background: var(--card-bg);
+    color: var(--text);
     margin-bottom: 14px;
   }
   input:focus, select:focus {
     outline: none;
-    border-color: #185fa5;
+    border-color: var(--accent);
   }
   .err {
     font-size: 13px;
-    color: #a32d2d;
+    color: var(--danger);
     display: none;
     margin-bottom: 10px;
   }
@@ -69,27 +115,32 @@
     margin-top: 16px;
   }
   .card {
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 12px;
     padding: 14px;
-    border: 1px solid #e5e3dc;
+    border: 1px solid var(--card-border);
   }
   .card p.label {
     font-size: 12px;
-    color: #666;
+    color: var(--text-secondary);
     margin: 0 0 4px;
   }
   .card p.value {
     font-size: 17px;
     font-weight: 600;
     margin: 0;
+    color: var(--text);
   }
 </style>
 </head>
 <body>
 <div class="app-container">
 
-<h1>محاسبه‌گر سود سپرده بانکی</h1>
+<div class="top-row">
+  <button id="theme-toggle" aria-label="تغییر حالت روشن/تاریک">🌙</button>
+  <h1>محاسبه‌گر سود سپرده بانکی</h1>
+  <span style="width:36px;"></span>
+</div>
 
 <label for="principal">مبلغ سپرده (تومان)</label>
 <input type="text" inputmode="numeric" id="principal" value="100,000,000" />
@@ -191,6 +242,22 @@ function calc(){
   document.getElementById('out-daily').textContent = formatMoney(dailyAvg);
   document.getElementById('out-monthly').textContent = formatMoney(monthlyAvg);
 }
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+var savedTheme = null;
+try { savedTheme = localStorage.getItem('theme'); } catch(e) {}
+var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var current = document.documentElement.getAttribute('data-theme');
+  var next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  try { localStorage.setItem('theme', next); } catch(e) {}
+});
+
 attachThousandsFormatting('principal');
 attachThousandsFormatting('rate');
 attachThousandsFormatting('days');
